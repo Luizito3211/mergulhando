@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mergulho em Redes — Problemas e Laboratório de Testes</title>
+<style>
+:root{--text:#eaf6ff;--muted:#a9c4dc;--panel:rgba(8,24,56,.72);--line:rgba(160,220,255,.25);--accent:#5ff0d8;--accent2:#c08bff;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--text:#eaf6ff;--panel:rgba(8,24,56,.72)}}
+:root[data-theme="dark"]{--text:#eaf6ff;--panel:rgba(8,24,56,.72)}
+html{scroll-padding-top:env(safe-area-inset-top,0px);scroll-behavior:smooth}
+*{box-sizing:border-box}
+body{margin:0;background:#06142e;color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.6}
+#bg{position:fixed;inset:0;z-index:0;pointer-events:none}
+#bg canvas{display:block}
+main,header,footer{position:relative;z-index:1;max-width:1000px;margin:0 auto;padding:0 18px}
+header{padding-top:64px;padding-bottom:30px;text-align:center}
+h1{font-size:clamp(2rem,7vw,3.4rem);margin:0 0 10px;line-height:1.1;background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;background-clip:text;color:transparent}
+header p{color:var(--muted);max-width:620px;margin:0 auto 20px}
+nav{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+nav a{color:var(--text);text-decoration:none;border:1px solid var(--line);background:var(--panel);padding:8px 14px;border-radius:99px;font-size:.9rem}
+nav a:hover{border-color:var(--accent)}
+section{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:22px;margin:22px 0;backdrop-filter:blur(6px)}
+h2{margin:0 0 6px;color:var(--accent)}
+.sub{color:var(--muted);margin:0 0 16px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px}
+.card{border:1px solid var(--line);border-radius:14px;padding:14px;background:rgba(255,255,255,.04)}
+.card h3{margin:0 0 4px;font-size:1.05rem}
+.card small{color:var(--accent2);font-weight:600}
+.card p{margin:6px 0 0;font-size:.92rem;color:var(--muted)}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.tabs button{font:inherit;color:var(--text);background:transparent;border:1px solid var(--line);border-radius:10px;padding:6px 12px;cursor:pointer}
+.tabs button.on{background:var(--accent);color:#04202a;border-color:var(--accent)}
+pre{margin:0;background:rgba(0,10,25,.7);border:1px solid var(--line);border-radius:12px;padding:14px;overflow-x:auto;color:#b8ffe9;font-size:.9rem}
+.out{margin-top:10px;color:var(--muted);font-size:.92rem}
+ol{padding-left:20px;margin:0}
+li{margin:6px 0}
+footer{text-align:center;color:var(--muted);padding:20px 18px 40px;font-size:.85rem}
+</style>
+</head>
+<body>
+<div id="bg"></div>
+
+<header>
+  <h1>Mergulho em Redes</h1>
+  <p>Os problemas mais comuns de rede, como diagnosticá-los e como montar um laboratório de testes para treinar sem derrubar a rede de verdade.</p>
+  <nav><a href="#problemas">Problemas</a><a href="#diagnostico">Diagnóstico</a><a href="#lab">Laboratório</a><a href="#roteiro">Roteiro</a></nav>
+</header>
+
+<main>
+<section id="problemas">
+  <h2>Problemas comuns de rede</h2>
+  <p class="sub">Sintoma → causa provável.</p>
+  <div class="grid">
+    <div class="card"><h3>Sem conectividade</h3><small>Camadas 1–3</small><p>Cabo solto, porta desativada, sem IP (APIPA 169.254.x.x) ou gateway errado.</p></div>
+    <div class="card"><h3>Falha de DNS</h3><small>Camada 7</small><p>Pinga o IP mas não abre o site. Servidor DNS errado, cache corrompido ou resolvedor fora do ar.</p></div>
+    <div class="card"><h3>Latência alta</h3><small>Desempenho</small><p>Link saturado, bufferbloat, rota ruim ou Wi-Fi com sinal fraco.</p></div>
+    <div class="card"><h3>Perda de pacotes</h3><small>Camadas 1–2</small><p>Cabo ruim, duplex incompatível, interferência no Wi-Fi ou porta com erros (CRC).</p></div>
+    <div class="card"><h3>Conflito de IP</h3><small>Camada 3</small><p>Dois dispositivos com o mesmo endereço, comum com IP fixo dentro da faixa do DHCP.</p></div>
+    <div class="card"><h3>Loop / tempestade de broadcast</h3><small>Camada 2</small><p>Switches ligados em anel sem STP. A rede inteira fica lenta ou cai.</p></div>
+    <div class="card"><h3>DHCP indisponível</h3><small>Camada 3</small><p>Escopo esgotado ou DHCP "pirata" (roteador doméstico) distribuindo faixa errada.</p></div>
+    <div class="card"><h3>Wi-Fi instável</h3><small>Camada 1</small><p>Canais sobrepostos, muitos clientes por AP, paredes e interferência de micro-ondas.</p></div>
+  </div>
+</section>
+
+<section id="diagnostico">
+  <h2>Diagnóstico na prática</h2>
+  <p class="sub">Siga de baixo para cima: cabo → IP → gateway → internet → DNS.</p>
+  <div class="tabs" id="tabs"></div>
+  <pre id="cmd"></pre>
+  <div class="out" id="desc"></div>
+</section>
+
+<section id="lab">
+  <h2>Laboratório de testes</h2>
+  <p class="sub">Ferramentas para reproduzir falhas com segurança.</p>
+  <div class="grid">
+    <div class="card"><h3>Cisco Packet Tracer</h3><small>Simulação</small><p>Monte topologias com switches, roteadores e VLANs sem hardware físico.</p></div>
+    <div class="card"><h3>GNS3 / EVE-NG</h3><small>Emulação</small><p>Roda imagens reais de roteadores e firewalls para cenários mais fiéis.</p></div>
+    <div class="card"><h3>VirtualBox / VMware</h3><small>Máquinas virtuais</small><p>Crie clientes e servidores (Linux, Windows) em redes internas isoladas.</p></div>
+    <div class="card"><h3>Wireshark</h3><small>Análise</small><p>Capture pacotes e veja ARP, DHCP, DNS e TCP acontecendo de verdade.</p></div>
+    <div class="card"><h3>iperf3</h3><small>Throughput</small><p>Mede banda entre dois pontos e ajuda a achar gargalos.</p></div>
+    <div class="card"><h3>tc / netem (Linux)</h3><small>Injeção de falhas</small><p>Simula latência, jitter e perda de pacotes para testar a reação dos serviços.</p></div>
+  </div>
+</section>
+
+<section id="roteiro">
+  <h2>Roteiro de laboratório</h2>
+  <p class="sub">Um exercício simples para começar.</p>
+  <ol>
+    <li>Monte 1 roteador, 1 switch, 1 servidor DHCP/DNS e 2 clientes.</li>
+    <li>Confirme que os clientes recebem IP e acessam o servidor.</li>
+    <li>Injete uma falha: derrube o DNS, duplique um IP ou adicione 20% de perda.</li>
+    <li>Capture o tráfego no Wireshark e identifique o sintoma.</li>
+    <li>Corrija, documente a causa e repita com outra falha.</li>
+  </ol>
+  <p class="sub" style="margin-top:14px">Dica: faça os testes só em ambiente isolado, nunca em redes de terceiros.</p>
+</section>
+</main>
+
+<footer>Fundo: arte low-poly em p5.js · feito para estudo de redes</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.4/p5.min.js"></script>
+<script>
+// ---------- Conteúdo interativo ----------
+const CMDS=[
+ ["ping","ping 8.8.8.8\nping google.com","Testa conectividade. Se o IP responde e o nome não, o problema é DNS."],
+ ["ipconfig / ip","ipconfig /all\nip addr show","Mostra IP, máscara, gateway e DNS. Um 169.254.x.x indica falha de DHCP."],
+ ["tracert","tracert google.com\ntraceroute google.com","Mostra por quais saltos o pacote passa e onde a latência aumenta."],
+ ["nslookup","nslookup google.com\ndig google.com","Verifica se a resolução de nomes funciona e qual servidor responde."],
+ ["arp","arp -a","Lista a tabela ARP. Útil para achar conflito de IP (MACs repetidos)."],
+ ["netem","sudo tc qdisc add dev eth0 root netem delay 100ms loss 5%\nsudo tc qdisc del dev eth0 root","No laboratório: adiciona 100 ms de atraso e 5% de perda; o segundo comando remove."]
+];
+const tabs=document.getElementById('tabs'),cmd=document.getElementById('cmd'),desc=document.getElementById('desc');
+CMDS.forEach((c,i)=>{const b=document.createElement('button');b.textContent=c[0];b.onclick=()=>sel(i);tabs.appendChild(b)});
+function sel(i){[...tabs.children].forEach((b,j)=>b.classList.toggle('on',i===j));cmd.textContent=CMDS[i][1];desc.textContent=CMDS[i][2]}
+sel(0);
+
+// ---------- Fundo p5.js ----------
+function poly(pts, r, g, b, a) {
+  fill(r, g, b, a === undefined ? 255 : a);
+  stroke(255, 255, 255, 40);
+  strokeWeight(0.8);
+  beginShape();
+  for (let i = 0; i < pts.length; i += 2) vertex(pts[i], pts[i + 1]);
+  endShape(CLOSE);
+}
+
+function setup() {
+  const c = createCanvas(windowWidth, windowHeight);
+  c.parent('bg');
+  pixelDensity(1);
+}
+
+function windowResized() { resizeCanvas(windowWidth, windowHeight); }
+
+function draw() {
+  drawWater();
+  drawLightRays();
+  drawSeafloorAndCorals();
+  for (let i = 0; i < 4; i++) {
+    let x = ((frameCount * (0.6 + i * 0.25) + i * 330) % (width + 160)) - 80;
+    let y = height * (0.25 + i * 0.13) + sin(frameCount * 0.03 + i) * 12;
+    drawFish(x, y, 0.9 + i * 0.12, [[255,140,60],[80,200,255],[255,90,150],[120,255,170]][i]);
+  }
+  for (let i = 0; i < 3; i++) {
+    let jx = width * (0.2 + i * 0.3) + sin(frameCount * 0.01 + i * 2) * 30;
+    let jy = height * 0.35 + sin(frameCount * 0.02 + i * 1.7) * 40;
+    drawJellyfish(jx, jy, 0.8 + i * 0.15, frameCount * 0.04 + i);
+  }
+  drawFloatingBubbles();
+}
+
+function drawWater() {
+  let g = drawingContext.createLinearGradient(0, 0, 0, height);
+  g.addColorStop(0, '#0f4a8a');
+  g.addColorStop(0.55, '#0a2a5c');
+  g.addColorStop(1, '#06142e');
+  drawingContext.fillStyle = g;
+  noStroke();
+  rect(0, 0, width, height);
+}
+
+function drawLightRays() {
+  noStroke();
+  for (let i = 0; i < 5; i++) {
+    let x = width * (i / 4) + sin(frameCount * 0.01 + i) * 40;
+    fill(150, 220, 255, 18);
+    quad(x - 20, 0, x + 40, 0, x + 140, height, x - 80, height);
+  }
+}
+
+function drawFish(x, y, s, col) {
+  push();
+  translate(x, y);
+  scale(s);
+  let tail = sin(frameCount * 0.2 + x * 0.05) * 8;
+  poly([-40, 0, -62, -14 + tail, -62, 14 + tail], col[0] * 0.8, col[1] * 0.8, col[2] * 0.8);
+  poly([-40, 0, -10, -18, 20, 0, -10, 18], col[0], col[1], col[2]);
+  poly([-10, -18, 20, 0, 0, -4], col[0] * 1.1, col[1] * 1.1, col[2] * 1.1, 200);
+  poly([20, 0, 38, -2, 20, 8], 255, 230, 180);
+  noStroke();
+  fill(255);
+  ellipse(26, -3, 5, 5);
+  fill(10);
+  ellipse(27, -3, 2, 2);
+  pop();
+}
+
+// =============================================================
+// ÁGUAS-VIVAS (MEDUSAS BIOLUMINESCENTES)
+// =============================================================
+function drawJellyfish(x, y, s, tentacleAngle) {
+  push();
+  translate(x, y);
+  scale(s);
+
+  poly([0, -40, -35, -20, 0, -10, 35, -20], 180, 100, 255, 160);
+  poly([-35, -20, -45, 10, -20, 15, 0, -10], 140, 70, 230, 140);
+  poly([35, -20, 45, 10, 20, 15, 0, -10], 210, 130, 255, 180);
+  poly([-20, 15, 0, -10, 20, 15, 0, 22], 240, 170, 255, 200);
+
+  stroke(180, 140, 255, 180);
+  strokeWeight(1.2);
+  noFill();
+
+  for (let offset = -30; offset <= 30; offset += 15) {
+    beginShape();
+    vertex(offset, 15);
+    let wave1 = sin(tentacleAngle + offset) * 12;
+    let wave2 = cos(tentacleAngle * 0.8 + offset) * 15;
+    vertex(offset + wave1, 50);
+    vertex(offset + wave2, 90);
+    vertex(offset + wave1 * 1.5, 130);
+    endShape();
+  }
+
+  pop();
+}
+
+// =============================================================
+// FUNDO DO MAR E RECIFE DE CORAIS
+// =============================================================
+function drawSeafloorAndCorals() {
+  let sandY = height - 100;
+  poly([0, sandY, 200, sandY - 20, 400, sandY + 10, 0, height], 190, 150, 90);
+  poly([200, sandY - 20, 600, sandY - 30, 400, sandY + 10], 210, 170, 105);
+  poly([600, sandY - 30, width, sandY - 10, width, height, 400, sandY + 10], 170, 130, 75);
+  poly([0, sandY + 40, width, sandY + 20, width, height, 0, height], 140, 105, 60);
+
+  poly([50, sandY, 30, sandY - 60, 65, sandY - 40], 230, 60, 110);
+  poly([30, sandY - 60, 10, sandY - 110, 45, sandY - 80], 255, 90, 140);
+  poly([45, sandY - 80, 40, sandY - 130, 70, sandY - 90], 240, 70, 120);
+
+  poly([100, sandY + 10, 120, sandY - 70, 145, sandY - 30], 120, 50, 180);
+  poly([120, sandY - 70, 110, sandY - 120, 140, sandY - 90], 150, 70, 210);
+  poly([140, sandY - 90, 160, sandY - 140, 170, sandY - 80], 170, 90, 230);
+
+  stroke(30, 180, 90);
+  strokeWeight(2);
+  let sway = sin(frameCount * 0.03) * 18;
+
+  for (let xBase = 220; xBase <= 340; xBase += 30) {
+    fill(20, 140, 70, 200);
+    beginShape();
+    vertex(xBase, sandY + 10);
+    vertex(xBase - 15 + sway * 0.5, sandY - 60);
+    vertex(xBase + 10 + sway, sandY - 120);
+    vertex(xBase - 5 + sway * 1.2, sandY - 170);
+    vertex(xBase + 15 + sway, sandY - 110);
+    vertex(xBase + 5 + sway * 0.5, sandY - 50);
+    endShape(CLOSE);
+  }
+
+  poly([680, sandY - 10, 710, sandY - 80, 735, sandY - 40], 255, 100, 40);
+  poly([710, sandY - 80, 700, sandY - 140, 730, sandY - 100], 255, 130, 50);
+  poly([730, sandY - 100, 760, sandY - 150, 775, sandY - 80], 240, 80, 30);
+  poly([735, sandY - 40, 775, sandY - 80, 790, sandY], 210, 60, 20);
+
+  poly([480, sandY + 10, 460, sandY - 35, 500, sandY - 45, 520, sandY + 15], 0, 220, 200);
+  poly([460, sandY - 35, 480, sandY - 65, 500, sandY - 45], 80, 255, 230);
+}
+
+// =============================================================
+// BOLHAS GEOMÉTRICAS ASCENDENTES
+// =============================================================
+function drawFloatingBubbles() {
+  randomSeed(100);
+
+  for (let i = 0; i < 20; i++) {
+    let bx = (random(width) + frameCount * 0.2) % width;
+    let speed = random(1.5, 3.5);
+    let by = (height - ((frameCount * speed + random(height)) % height));
+    let sz = random(6, 16);
+
+    push();
+    translate(bx, by);
+    rotate(frameCount * 0.02 + i);
+
+    fill(180, 230, 255, 120);
+    stroke(255, 200);
+    strokeWeight(0.8);
+
+    beginShape();
+    vertex(0, -sz);
+    vertex(sz * 0.8, -sz * 0.3);
+    vertex(sz * 0.8, sz * 0.5);
+    vertex(0, sz);
+    vertex(-sz * 0.8, sz * 0.5);
+    vertex(-sz * 0.8, -sz * 0.3);
+    endShape(CLOSE);
+
+    noStroke();
+    fill(255, 220);
+    ellipse(-sz * 0.3, -sz * 0.3, sz * 0.3, sz * 0.3);
+
+    pop();
+  }
+}
+</script>
+</body>
+</html>
